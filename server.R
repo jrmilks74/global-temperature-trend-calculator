@@ -68,8 +68,8 @@ CO2 <- CO2 %>%
 ENSO <- read_table("https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt")
 ENSO$Time <- seq.Date(from = as.Date("1950-01-01"), by = "month", length.out = nrow(ENSO))
 ENSO$Status <- with(ENSO,
-                    ifelse(ANOM >= 0.5, "El Niño",
-                           ifelse(ANOM <= -0.5, "La Niña",
+                    ifelse(ANOM > 0.5, "El Niño",
+                           ifelse(ANOM < -0.5, "La Niña",
                                   "Neutral"
                                   )
                            )
@@ -296,10 +296,8 @@ shinyServer(function(input, output) {
             ENSO_sub <- subset(ENSO, YR >= input$ENSO_startdate & YR <= input$ENSO_enddate)
             ENSO_p <- ggplot(ENSO_sub, aes(x = Time, y = ANOM)) +
                     theme_bw() +
-                    geom_path(aes(color = Status, group = 1)) +
-                    geom_point(aes(color = Status), size = 0.5) +
+                    geom_line() +
                     geom_smooth(method = "loess", formula = y ~ x) +
-                    scale_colour_manual(name = "Status", values = setNames(c("red", "black", "blue"), c("El Niño", "Neutral", "La Niña"))) +
                     labs(x = "Year",
                          y = "Sea surface temperature anomaly (ºC)",
                          title = "ENSO 3.4 sea surface temperature")

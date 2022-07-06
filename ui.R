@@ -149,11 +149,11 @@ shinyUI(fluidPage(
                             ),
                             #Trend, time series graph, and regression output
                             mainPanel(
-                                    h3("Change in ENSO 3.4 area sea surface temperatures per decade (ºC)"),
+                                    h3("Change in ENSO 3.4 area temperature anomalies per decade (ºC)"),
                                     textOutput("ENSO_trend"),
                                     h5("95% confidence interval (ºC)"),
                                     textOutput("ENSO_confidence"),
-                                    h3("Change in sea surface temperatures over time"),
+                                    h3("Change in ENSO temperature anomalies over time"),
                                     h5("Loess trend with 95% confidence interval"),
                                     plotlyOutput("ENSO_plot"),
                                     h3("Regression fit"),
