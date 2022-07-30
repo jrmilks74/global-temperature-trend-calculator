@@ -18,11 +18,12 @@ shinyUI(fluidPage(
                                     selectInput("temperature", "Choose a data set:",
                                                 list("GISS" = "GISS",
                                                      "NOAA" = "NOAA",
-                                                     "HadCRUT" = "HadCRUT"),
+                                                     "HadCRUT" = "HadCRUT",
+                                                     "BEST" = "BEST"),
                                                 selected = "HadCRUT"),
                                     
                                     h5("Enter a year between 1850 and last year"),
-                                    h6("Note: HadCRUT starts in 1850, NOAA and GISS in 1880"),
+                                    h6("Note: HadCRUT and BEST start in 1850, NOAA and GISS in 1880"),
                                     numericInput("startdate", "Start Year", 1880, min = 1850),
                                     numericInput("enddate", "End Year", 2021, min = 1851)
                                     ),
@@ -180,6 +181,10 @@ shinyUI(fluidPage(
                                     a(href = "https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/download.html", "https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/download.html"),
                                     br(),
                                     br(),
+                                    "BEST:",
+                                    a(href = "http://berkeleyearth.lbl.gov/auto/Global/Land_and_Ocean_summary.txt", "http://berkeleyearth.lbl.gov/auto/Global/Land_and_Ocean_summary.txt"),
+                                    br(),
+                                    br(),
                                     "RSS TLT:",
                                     a(href = "https://images.remss.com/msu/graphics/TLT_v40/time_series/RSS_TS_channel_TLT_Global_Land_And_Sea_v04_0.txt", "https://images.remss.com/msu/graphics/TLT_v40/time_series/RSS_TS_channel_TLT_Global_Land_And_Sea_v04_0.txt"),
                                     br(),
@@ -212,7 +217,7 @@ shinyUI(fluidPage(
                                     a(href = "https://www.carbonbrief.org/explainer-how-data-adjustments-affect-global-temperature-records/", "https://www.carbonbrief.org/explainer-how-data-adjustments-affect-global-temperature-records/"),
                                    br(),
                                    br(),
-                                   HTML("But no, those adjustments don't create global warming from nothing. In fact, the adjustments actually make the temperature data shows <i>less</i> global warming."),
+                                   HTML("But no, those adjustments don't create global warming from nothing. In fact, the adjustments actually make the temperature data show <i>less</i> global warming."),
                                    br(),
                                    h4("Question: Isn't this all part of a natural cycle?"),
                                    p("Answer: No. None of the natural cycles we currently know could explain the current warming trend. First, it's happening much faster than any natural cycle could cause. Second, all of the cycles we have discovered so far are either neutral or cooling."),
@@ -221,7 +226,7 @@ shinyUI(fluidPage(
                                    p("El Niño? No discernable trend and also has the wrong period. While El Niño explains some of the wiggles around the trend, it does not match the trend itself."),
                                    p("Pacific Decadal Oscillation? Again, doesn't match the trend. Beyond not matching the trend, if ocean cycles were causing global warming, we'd expect ocean temperatures to cool as the atmosphere warmed. That hasn't happened."),
                                    p("Cosmic rays? Cosmic rays create C-14 in the atmosphere. If it was cosmic rays, we'd see more C-14 being created. That hasn't happened."),
-                                   HTML("The planet been both warmer and cooler than today. However, just because what happened in the past was natural does not mean that what is happening today is also natural. Change happens because something is <i>causing</i> that change. If you truly believe that global warming is due to a natural cycle, the burden of proof is on <b>you</b> to identify that cycle and show that it is causing the current warming trend. So, which cycle is it and what's your evidence?")
+                                   HTML("The planet been both warmer and cooler than today. However, just because what happened in the past was natural does not mean that what is happening today is also natural. Change happens because something is <i>causing</i> that change. If you truly believe that global warming is due to a natural cycle, the burden of proof is on <b>you</b> to identify that cycle and show that it is causing the current warming trend. So, which cycle is it and where's your evidence?")
                                         )
                             )
                     )

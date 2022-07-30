@@ -28,6 +28,13 @@ HadCRUT <- HadCRUT %>%
         rename(Year = "Time", anomaly = "Anomaly (deg C)") %>%
         select(Year, anomaly)
 
+BEST <- read_table("http://berkeleyearth.lbl.gov/auto/Global/Land_and_Ocean_summary.txt",
+                   col_names = FALSE, skip = 58)
+BEST <- BEST %>%
+        rename(Year = "X1", anomaly = "X2") %>%
+        select(Year, anomaly)
+
+
 RSS <- RSS <- read_table("https://images.remss.com/msu/graphics/TLT_v40/time_series/RSS_TS_channel_TLT_Global_Land_And_Sea_v04_0.txt", 
                           col_names = FALSE, skip = 17)
 RSS <- RSS %>%
@@ -84,6 +91,8 @@ shinyServer(function(input, output) {
                     GISS
             else if (input$temperature == "NOAA")
                     NOAA
+            else if (input$temperature == "BEST")
+                    BEST
             else
                     HadCRUT
     })
