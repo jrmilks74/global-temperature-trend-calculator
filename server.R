@@ -4,6 +4,7 @@ library(tidyverse)
 library(readr)
 library(forecast)
 library(nlme)
+library(naniar)
 
 # Data sets of average annual global temperature
 GISS <- read_table("https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.txt", 
@@ -34,7 +35,7 @@ BEST <- BEST %>%
         rename(Year = "X1", anomaly = "X2") %>%
         select(Year, anomaly)
 
-
+# Satelite data sets
 RSS <- RSS <- read_table("https://images.remss.com/msu/graphics/TLT_v40/time_series/RSS_TS_channel_TLT_Global_Land_And_Sea_v04_0.txt", 
                           col_names = FALSE, skip = 17)
 RSS <- RSS %>%
@@ -53,6 +54,7 @@ UAH <- UAH %>%
         group_by(Year) %>%
         summarize(anomaly = mean(anomaly, na.rm = TRUE))
 
+# Sea surface temperatures
 HadSST <- read_csv("https://www.metoffice.gov.uk/hadobs/hadsst4/data/csv/HadSST.4.0.1.0_annual_GLOBE.csv",
                    col_types = cols(year = col_number(),
                                     anomaly = col_number()))
@@ -60,18 +62,20 @@ HadSST <- HadSST %>%
         rename(Year = "year") %>%
         select(Year, anomaly)
 
-
+# Sunspot data
 sunspots <- read_table("https://www.sidc.be/silso/DATA/SN_y_tot_V2.0.txt", col_names = FALSE)
 sunspots <- sunspots %>%
         rename(Year = X1, number = X2) %>%
         select(Year, number)
 sunspots$Year <- sunspots$Year - 0.5
 
+# CO2 annual data
 CO2 <- read_table("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.txt", 
-                   col_names = FALSE, skip = 57)
+                   col_names = FALSE, skip = 61)
 CO2 <- CO2 %>%
         rename(Year = X1, mean.CO2 = X2, uncertainty = X3)
 
+# El Nino/Southern Oscillation data
 ENSO <- read_table("https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt")
 ENSO$Time <- seq.Date(from = as.Date("1950-01-01"), by = "month", length.out = nrow(ENSO))
 ENSO$Status <- with(ENSO,
@@ -82,7 +86,62 @@ ENSO$Status <- with(ENSO,
                            )
                     )
 
+# Sea Ice
+## Arctic sea ice
+Arctic_sea_ice <- read_table("https://psl.noaa.gov/data/timeseries/monthly/data/n_iceextent.mon.data", col_names = FALSE, skip = 1) %>%
+        head(-11) %>%
+        mutate_if(is.character, as.numeric) %>%
+        rename(year = X1,
+               January = X2,
+               February = X3, 
+               March = X4, 
+               April = X5, 
+               May = X6, 
+               June = X7,
+               July = X8,
+               August = X9,
+               September = X10,
+               October = X11,
+               November = X12,
+               December = X13) %>%
+        pivot_longer(!year, names_to = "month", values_to = "extent") %>%
+        replace_with_na(replace = list(extent = -99.99))
 
+Arctic_sea_ice$month <- match(Arctic_sea_ice$month, month.name)  %>%
+        as.numeric()
+
+Arctic_sea_ice$year_month <- make_date(year = Arctic_sea_ice$year, month = Arctic_sea_ice$month, day = 1)
+Arctic_sea_ice$decimal.date <- Arctic_sea_ice$year + (Arctic_sea_ice$month - 1) / 12
+Arctic_sea_ice$extent <- Arctic_sea_ice$extent*100000
+
+## Antarctic sea ice data
+Antarctic_sea_ice <- read_table("https://psl.noaa.gov/data/timeseries/monthly/data/s_iceextent.mon.data", col_names = FALSE, skip = 1) %>%
+        head(-11) %>%
+        mutate_if(is.character, as.numeric) %>%
+        rename(year = X1,
+               January = X2,
+               February = X3, 
+               March = X4, 
+               April = X5, 
+               May = X6, 
+               June = X7,
+               July = X8,
+               August = X9,
+               September = X10,
+               October = X11,
+               November = X12,
+               December = X13) %>%
+        pivot_longer(!year, names_to = "month", values_to = "extent") %>%
+        replace_with_na(replace = list(extent = -99.99))
+
+Antarctic_sea_ice$month <- match(Antarctic_sea_ice$month, month.name)  %>%
+        as.numeric()
+
+Antarctic_sea_ice$year_month <- make_date(year = Antarctic_sea_ice$year, month = Antarctic_sea_ice$month, day = 1)
+Antarctic_sea_ice$decimal.date <- Antarctic_sea_ice$year + (Antarctic_sea_ice$month - 1) / 12
+Antarctic_sea_ice$extent <- Antarctic_sea_ice$extent*100000
+
+# Server function
 shinyServer(function(input, output) {
     # Create graph of surface temperature data and linear regression fit
         
@@ -284,7 +343,7 @@ shinyServer(function(input, output) {
             summary(fit)
     })
     
-    #Sunspot trend and confidence interval
+    #CO2 trend and confidence interval
     output$CO2_trend <- renderText({
             CO2_sub <- subset(CO2, Year >= input$CO2_startdate & Year <= input$CO2_enddate)
             start.year <- input$CO2_startdate
@@ -313,14 +372,14 @@ shinyServer(function(input, output) {
             ggplotly(ENSO_p)
     })
     
-    #Sunspot regression fit
+    #ENSO regression fit
     output$ENSO_sum <- renderPrint({
             ENSO_sub <- subset(ENSO, YR >= input$ENSO_startdate & YR <= input$ENSO_enddate)
             fit <- lm(ANOM ~ Time, data = ENSO_sub)
             summary(fit)
     })
     
-    #Sunspot trend and confidence interval
+    #ENSO trend and confidence interval
     output$ENSO_trend <- renderText({
             ENSO_sub <- subset(ENSO, YR >= input$ENSO_startdate & YR <= input$ENSO_enddate)
             fit <- lm(ANOM ~ Time, data = ENSO_sub)
@@ -334,5 +393,80 @@ shinyServer(function(input, output) {
             c(round(100*confidence[2,1], 2), round(100*confidence[2,2], 2))
     })
     
+    # Sea Ice extent
+    sea_ice_data_set <- reactive({
+            if (input$sea_ice_data == "Arctic")
+                    Arctic_sea_ice
+            else
+                    Antarctic_sea_ice
+    })
+    
+    sea_ice_month <- reactive({
+            if (input$sea_ice_month_choice == "January")
+                    1
+            else if (input$sea_ice_month_choice == "February")
+                    2
+            else if (input$sea_ice_month_choice == "March")
+                    3
+            else if (input$sea_ice_month_choice == "April")
+                    4
+            else if (input$sea_ice_month_choice == "May")
+                    5
+            else if (input$sea_ice_month_choice == "June")
+                    6
+            else if (input$sea_ice_month_choice == "July")
+                    7
+            else if (input$sea_ice_month_choice == "August")
+                    8
+            else if (input$sea_ice_month_choice == "September")
+                    9
+            else if (input$sea_ice_month_choice == "October")
+                    10
+            else if (input$sea_ice_month_choice == "November")
+                    11
+            else if (input$sea_ice_month_choice == "December")
+                    12
+            else 
+                    1:12
+    })
+    
+    output$sea_ice_plot <- renderPlotly({
+            sea_ice_suba <- subset(sea_ice_data_set(), year >= input$sea_ice_startdate & year <= input$sea_ice_enddate)
+            sea_ice_sub <- subset(sea_ice_suba, month %in% sea_ice_month())
+            
+            sea_ice_p <- ggplot(sea_ice_sub, aes(x = decimal.date, y = extent)) +
+                    theme_bw() +
+                    geom_line() +
+                    geom_smooth(method = "loess", formula = y ~ x, aes(colour = "LOESS"), se = FALSE, size = 0.5) +
+                    geom_smooth(method = "lm", formula = y ~ x, aes(colour = "Linear Trend")) +
+                    labs(x = "Year",
+                         y = "Sea ice extent (millions sq km)",
+                         title = "Sea ice extent")
+            
+            ggplotly(sea_ice_p)
+    })
+    
+    output$sea_ice_sum <- renderPrint({
+            sea_ice_suba <- subset(sea_ice_data_set(), year >= input$sea_ice_startdate & year <= input$sea_ice_enddate)
+            sea_ice_sub <- subset(sea_ice_suba, month %in% sea_ice_month())
+            fit <- lm(extent ~ decimal.date, data = sea_ice_sub)
+            summary(fit)
+    })
+    
+    #ENSO trend and confidence interval
+    output$sea_ice_trend <- renderText({
+            sea_ice_suba <- subset(sea_ice_data_set(), year >= input$sea_ice_startdate & year <= input$sea_ice_enddate)
+            sea_ice_sub <- subset(sea_ice_suba, month %in% sea_ice_month())
+            fit <- lm(extent ~ decimal.date, data = sea_ice_sub)
+            round(10*fit$coefficients[2], 2)
+    })
+    
+    output$sea_ice_confidence <- renderText({
+            sea_ice_suba <- subset(sea_ice_data_set(), year >= input$sea_ice_startdate & year <= input$sea_ice_enddate)
+            sea_ice_sub <- subset(sea_ice_suba, month %in% sea_ice_month())
+            fit <- lm(extent ~ decimal.date, data = sea_ice_sub)
+            confidence <- confint(fit)
+            c(round(10*confidence[2,1], 2), 10*round(confidence[2,2], 2))
+    })
     
 })

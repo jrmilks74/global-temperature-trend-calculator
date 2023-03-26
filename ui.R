@@ -25,7 +25,7 @@ shinyUI(fluidPage(
                                     h5("Enter a year between 1850 and last year"),
                                     h6("Note: HadCRUT and BEST start in 1850, NOAA and GISS in 1880"),
                                     numericInput("startdate", "Start Year", 1880, min = 1850),
-                                    numericInput("enddate", "End Year", 2021, min = 1851)
+                                    numericInput("enddate", "End Year", 2022, min = 1851)
                                     ),
                             
                             # Trend, time series graph with regression line, and regression output.
@@ -54,7 +54,7 @@ shinyUI(fluidPage(
                             
                             h5("Enter a year between 1979 and last year"),
                             numericInput("sat_startdate", "Start Year", 1979, min = 1979),
-                            numericInput("sat_enddate", "End Year", 2021, min = 1980)
+                            numericInput("sat_enddate", "End Year", 2022, min = 1980)
                             ),
                             # Trend, time series graph with regression line, and regression output.
                             mainPanel(
@@ -77,7 +77,7 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1850 and last year"),
                                     numericInput("ocean_startdate", "Start Year", 1850, min = 1850),
-                                    numericInput("ocean_enddate", "End Year", 2021, min = 1851)
+                                    numericInput("ocean_enddate", "End Year", 2022, min = 1851)
                             ),
                             # Trend, time series graph with regression line, and regression output.
                             mainPanel(
@@ -100,7 +100,7 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1750 and last year"),
                                     numericInput("sun_startdate", "Start Year", 1750, min = 1750),
-                                    numericInput("sun_enddate", "End Year", 2021, min = 1751)
+                                    numericInput("sun_enddate", "End Year", 2022, min = 1751)
                                     ),
                     #Trend, time series graph, and regression output
                     mainPanel(
@@ -123,7 +123,7 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1959 and last year"),
                                     numericInput("CO2_startdate", "Start Year", 1959, min = 1959),
-                                    numericInput("CO2_enddate", "End Year", 2021, min = 1960)
+                                    numericInput("CO2_enddate", "End Year", 2022, min = 1960)
                             ),
                             #Trend, time series graph, and regression output
                             mainPanel(
@@ -141,7 +141,7 @@ shinyUI(fluidPage(
             ),
             
             tabPanel(
-                    "El Niñ0/Southern Oscillation",
+                    "El Niño/Southern Oscillation",
                     sidebarLayout(
                             sidebarPanel(
                                     h5("Enter a year between 1950 and last year"),
@@ -161,6 +161,47 @@ shinyUI(fluidPage(
                                     verbatimTextOutput("ENSO_sum")
                             )
                     )
+            ),
+            
+            tabPanel(
+                    "Sea Ice Extent",
+                    sidebarLayout(
+                            sidebarPanel(
+                                    h5("Pick a data set"),
+                                    selectInput("sea_ice_data", "Select data", choices = c("Arctic", 
+                                                                                           "Antarctic")
+                                                ),
+                                    h5("Enter a year between 1979 and last year"),
+                                    numericInput("sea_ice_startdate", "Start Year", 1979, min = 1979),
+                                    numericInput("sea_ice_enddate", "End Year", 2023, min = 1980),
+                                    h5("Select a month"),
+                                    selectInput("sea_ice_month_choice", "Select month", choices = c("All",
+                                                                                     "January",
+                                                                                     "February",
+                                                                                     "March",
+                                                                                     "April",
+                                                                                     "May",
+                                                                                     "June",
+                                                                                     "July",
+                                                                                     "August",
+                                                                                     "September",
+                                                                                     "October",
+                                                                                     "November",
+                                                                                     "December")
+                                                )
+                            ),
+                            mainPanel(
+                                    h3("Change in sea ice extent per decade (square kilometers)"),
+                                    textOutput("sea_ice_trend"),
+                                    h5("95% confidence interval (square kilometers)"),
+                                    textOutput("sea_ice_confidence"),
+                                    h3("Change in sea ice extent over time"),
+                                    h5("Loess trend with 95% confidence interval"),
+                                    plotlyOutput("sea_ice_plot"),
+                                    h3("Linear Regression fit"),
+                                    verbatimTextOutput("sea_ice_sum")    
+                            )
+                            )
             ),
             
             tabPanel(
@@ -208,6 +249,14 @@ shinyUI(fluidPage(
                                     "El Niño/Southern Oscillation:",
                                     a(href = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt", "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"),
                                     br(),
+                                    br(),
+                                    "Arctic Sea Ice:",
+                                    a(href = "https://psl.noaa.gov/data/timeseries/monthly/data/n_iceextent.mon.data", "https://psl.noaa.gov/data/timeseries/monthly/data/n_iceextent.mon.data"),
+                                    br(),
+                                    br(),
+                                    "Antarctic Sea Ice:",
+                                    a(href = "https://psl.noaa.gov/data/timeseries/monthly/data/s_iceextent.mon.data", "https://psl.noaa.gov/data/timeseries/monthly/data/s_iceextent.mon.data"),
+                                    br(),
                                     h4("Question: I've heard that the temperature data are fudged, that there's really no warming."),
                                    p("Answer: This one has been answered so many times, we're flogging a dead horse at this point. Yes, scientists make adjustments to the data. No, they're not fudging the data. Those adjustments are to make the data more accurate."), 
                                    br(),
@@ -221,9 +270,9 @@ shinyUI(fluidPage(
                                    br(),
                                    h4("Question: Isn't this all part of a natural cycle?"),
                                    p("Answer: No. None of the natural cycles we currently know could explain the current warming trend. First, it's happening much faster than any natural cycle could cause. Second, all of the cycles we have discovered so far are either neutral or cooling."),
-                                   p("The sun? Cooling since the 1950s."),
+                                   p("The sun? Cooling since the 1950s, as you can verify yourselves with the Solar Activity tab."),
                                    p("Milankovic cycles? Neutral or cooling over the past 6,000 years and also take centuries to change the average global temperature by 1ºC."),
-                                   p("El Niño? No discernable trend and also has the wrong period. While El Niño explains some of the wiggles around the trend, it does not match the trend itself."),
+                                   p("El Niño? No discernable trend and also has the wrong period, again as you can verify yourself with the ENSO tab. While El Niño explains some of the wiggles around the trend, it does not match the trend itself."),
                                    p("Pacific Decadal Oscillation? Again, doesn't match the trend. Beyond not matching the trend, if ocean cycles were causing global warming, we'd expect ocean temperatures to cool as the atmosphere warmed. That hasn't happened."),
                                    p("Cosmic rays? Cosmic rays create C-14 in the atmosphere. If it was cosmic rays, we'd see more C-14 being created. That hasn't happened."),
                                    HTML("The planet been both warmer and cooler than today. However, just because what happened in the past was natural does not mean that what is happening today is also natural. Change happens because something is <i>causing</i> that change. If you truly believe that global warming is due to a natural cycle, the burden of proof is on <b>you</b> to identify that cycle and show that it is causing the current warming trend. So, which cycle is it and where's your evidence?")
@@ -233,9 +282,9 @@ shinyUI(fluidPage(
             ),
     hr(),
     h5("Created by: Jim Milks"),
-    "Version 3",
+    "Version 4",
     br(),
-    "Updated: 05 July 2022",
+    "Updated: 25 March 2023",
     br(),
     "Code available at:",
     a(href = "https://github.com/jrmilks74/global-temperature-trend-calculator/tree/main", "https://github.com/jrmilks74/global-temperature-trend-calculator/tree/main")
