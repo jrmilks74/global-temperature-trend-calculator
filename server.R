@@ -17,23 +17,25 @@ GISS$anomaly <- GISS$anomaly/100
 GISS <- GISS %>%
         na.omit()
 
-NOAA <- read_csv("https://www.ncdc.noaa.gov/cag/global/time-series/globe/land_ocean/12/12/1880-2022/data.csv",
-                 col_types = cols(Year = col_number(),
-                                  Value = col_number()), 
-                 skip = 4)
+NOAA <- read_table("https://www.ncei.noaa.gov/data/noaa-global-surface-temperature/v5.1/access/timeseries/aravg.ann.land_ocean.90S.90N.v5.1.0.202306.asc", 
+                   col_names = FALSE)
 NOAA <- NOAA %>%
-        rename(anomaly = Value)
+        rename(Year = X1,
+               anomaly = X2) %>%
+        select(Year, anomaly)
 
 HadCRUT <- read_csv("https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/analysis/diagnostics/HadCRUT.5.0.1.0.analysis.summary_series.global.annual.csv")
 HadCRUT <- HadCRUT %>%
         rename(Year = "Time", anomaly = "Anomaly (deg C)") %>%
         select(Year, anomaly)
 
-BEST <- read_table("http://berkeleyearth.lbl.gov/auto/Global/Land_and_Ocean_summary.txt",
-                   col_names = FALSE, skip = 58)
-BEST <- BEST %>%
-        rename(Year = "X1", anomaly = "X2") %>%
-        select(Year, anomaly)
+BEST <- read_table("https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Land_and_Ocean_complete.txt",
+                   col_names = FALSE, skip = 86) %>%
+        rename(Year = "X1", month = "X2", anomaly = "X3") %>%
+        select(Year, anomaly) %>%
+        group_by(Year) %>%
+        summarize(anomaly = mean(anomaly, na.rm = TRUE)) %>%
+        slice(1:(n() - 1)) 
 
 # Satelite data sets
 RSS <- RSS <- read_table("https://images.remss.com/msu/graphics/TLT_v40/time_series/RSS_TS_channel_TLT_Global_Land_And_Sea_v04_0.txt", 
@@ -65,9 +67,25 @@ HadSST <- HadSST %>%
 # Sunspot data
 sunspots <- read_table("https://www.sidc.be/silso/DATA/SN_y_tot_V2.0.txt", col_names = FALSE)
 sunspots <- sunspots %>%
-        rename(Year = X1, number = X2) %>%
-        select(Year, number)
+        rename(Year = X1, Solar = X2) %>%
+        select(Year, Solar)
 sunspots$Year <- sunspots$Year - 0.5
+
+# Solar output
+irradiance <- read_table("https://www2.mps.mpg.de/projects/sun-climate/data/SATIRE-T_SATIRE-S_TSI_1850_20220923.txt", 
+           col_names = FALSE, 
+           skip = 22) %>%
+        rename(time = X1, 
+               irradiance = X2) %>%
+        select(time, irradiance) %>%
+        mutate(daily = as.Date((time - 2396759), 
+                               origin = as.Date("1850-01-01"))) %>%
+        select(daily, irradiance) %>%
+        mutate(Year = floor_date(daily, "year")) %>%
+        mutate(Year = year(Year)) %>%
+        group_by(Year) %>%
+        summarize(irradiance = mean(irradiance, na.rm = TRUE)) %>%
+        rename(Solar =  irradiance)
 
 # CO2 annual data
 CO2 <- read_table("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.txt", 
@@ -284,39 +302,46 @@ shinyServer(function(input, output) {
     })
     
     #Sunspot numbers plot
+    solar_selection <- reactive({
+            if (input$solar_data == "sunspots")
+                    sunspots
+            else
+                    irradiance
+    })
+    
     output$sun_plot <- renderPlotly({
-            sun_sub <- subset(sunspots, Year >= input$sun_startdate & Year <= input$sun_enddate)
-            sun_p <- ggplot(sun_sub, aes(x = Year, y = number)) +
+            sun_sub <- subset(solar_selection(), Year >= input$sun_startdate & Year <= input$sun_enddate)
+            sun_p <- ggplot(sun_sub, aes(x = Year, y = Solar)) +
                     theme_bw() +
                     geom_line(colour = "yellow") +
                     geom_smooth(method = loess, formula = y ~ x, aes(colour = "LOESS"), se = FALSE) +
                     geom_smooth(method = "lm", formula = y ~ x, aes(colour = "Linear trend")) +
                     labs(x = "Year",
-                         y = "Monthly mean sunspot number",
-                         title = "Mean monthly sunspot number per year")
+                         y = "Mean solar output",
+                         title = "Mean solar output per year")
             ggplotly(sun_p)
             })
     
     #Sunspot regression fit
     output$sun_sum <- renderPrint({
-            sun_sub <- subset(sunspots, sunspots$Year >= input$sun_startdate & sunspots$Year <= input$sun_enddate)
+            sun_sub <- subset(solar_selection(), solar_selection()$Year >= input$sun_startdate & solar_selection()$Year <= input$sun_enddate)
             start.year <- input$sun_startdate
-            fit <- lm(number~I(Year - start.year), data = sun_sub)
+            fit <- lm(Solar~I(Year - start.year), data = sun_sub)
             summary(fit)
             })
     
     #Sunspot trend and confidence interval
     output$sun_trend <- renderText({
-            sun_sub <- subset(sunspots, sunspots$Year >= input$sun_startdate & sunspots$Year <= input$sun_enddate)
+            sun_sub <- subset(solar_selection(), solar_selection()$Year >= input$sun_startdate & solar_selection()$Year <= input$sun_enddate)
             start.year <- input$sun_startdate
-            fit <- lm(number ~ I(Year - start.year), data = sun_sub)
+            fit <- lm(Solar ~ I(Year - start.year), data = sun_sub)
             round(100*fit$coefficients[2], 2)
     })
     
     output$sun_confidence <- renderText({
-            sun_sub <- subset(sunspots, sunspots$Year >= input$sun_startdate & sunspots$Year <= input$sun_enddate)
+            sun_sub <- subset(solar_selection(), solar_selection()$Year >= input$sun_startdate & solar_selection()$Year <= input$sun_enddate)
             start.year <- input$sun_startdate
-            fit <- lm(number ~ I(Year - start.year), data = sun_sub)
+            fit <- lm(Solar ~ I(Year - start.year), data = sun_sub)
             confidence <- confint(fit)
             c(round(100*confidence[2,1], 2), round(100*confidence[2,2], 2))
     })

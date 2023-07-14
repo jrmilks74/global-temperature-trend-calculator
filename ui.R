@@ -25,7 +25,7 @@ shinyUI(fluidPage(
                                     h5("Enter a year between 1850 and last year"),
                                     h6("Note: HadCRUT and BEST start in 1850, NOAA and GISS in 1880"),
                                     numericInput("startdate", "Start Year", 1880, min = 1850),
-                                    numericInput("enddate", "End Year", 2022, min = 1851)
+                                    numericInput("enddate", "End Year", 2023, min = 1851)
                                     ),
                             
                             # Trend, time series graph with regression line, and regression output.
@@ -51,11 +51,10 @@ shinyUI(fluidPage(
                                                 list("RSS" = "RSS",
                                                      "UAH" = "UAH"),
                                                 selected = "RSS"),
-                            
-                            h5("Enter a year between 1979 and last year"),
-                            numericInput("sat_startdate", "Start Year", 1979, min = 1979),
-                            numericInput("sat_enddate", "End Year", 2022, min = 1980)
-                            ),
+                                    h5("Enter a year between 1979 and last year"),
+                                    numericInput("sat_startdate", "Start Year", 1979, min = 1979),
+                                    numericInput("sat_enddate", "End Year", 2023, min = 1980)
+                                    ),
                             # Trend, time series graph with regression line, and regression output.
                             mainPanel(
                                     h3("Trend per 100 years (ºC)"),
@@ -77,7 +76,7 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1850 and last year"),
                                     numericInput("ocean_startdate", "Start Year", 1850, min = 1850),
-                                    numericInput("ocean_enddate", "End Year", 2022, min = 1851)
+                                    numericInput("ocean_enddate", "End Year", 2023, min = 1851)
                             ),
                             # Trend, time series graph with regression line, and regression output.
                             mainPanel(
@@ -98,17 +97,21 @@ shinyUI(fluidPage(
                     "Solar Activity",
                     sidebarLayout(
                             sidebarPanel(
-                                    h5("Enter a year between 1750 and last year"),
-                                    numericInput("sun_startdate", "Start Year", 1750, min = 1750),
-                                    numericInput("sun_enddate", "End Year", 2022, min = 1751)
+                                    selectInput("solar_data", "Choose a data set:",
+                                                list("Sunspots" = "sunspots",
+                                                     "Solar irradiance" = "irradiance"),
+                                                selected = "irradiance"),
+                                    h5("Enter a year between 1850 and last year"),
+                                    numericInput("sun_startdate", "Start Year", 1850, min = 1750),
+                                    numericInput("sun_enddate", "End Year", 2023, min = 1751)
                                     ),
                     #Trend, time series graph, and regression output
                     mainPanel(
-                            h3("Change in sunspots numbers per 100 years"),
+                            h3("Change in solar output per 100 years"),
                             textOutput("sun_trend"),
                             h5("95% confidence interval"),
                             textOutput("sun_confidence"),
-                            h3("Change in sunspot numbers over time"),
+                            h3("Change in solar output over time"),
                             h5("Trend with 95% confidence interval"),
                             plotlyOutput("sun_plot"),
                             h3("Regression fit"),
@@ -123,7 +126,7 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1959 and last year"),
                                     numericInput("CO2_startdate", "Start Year", 1959, min = 1959),
-                                    numericInput("CO2_enddate", "End Year", 2022, min = 1960)
+                                    numericInput("CO2_enddate", "End Year", 2023, min = 1960)
                             ),
                             #Trend, time series graph, and regression output
                             mainPanel(
@@ -146,7 +149,7 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1950 and last year"),
                                     numericInput("ENSO_startdate", "Start Year", 1950, min = 1950),
-                                    numericInput("ENSO_enddate", "End Year", 2022, min = 1951)
+                                    numericInput("ENSO_enddate", "End Year", 2023, min = 1951)
                             ),
                             #Trend, time series graph, and regression output
                             mainPanel(
@@ -223,7 +226,7 @@ shinyUI(fluidPage(
                                     br(),
                                     br(),
                                     "BEST:",
-                                    a(href = "http://berkeleyearth.lbl.gov/auto/Global/Land_and_Ocean_summary.txt", "http://berkeleyearth.lbl.gov/auto/Global/Land_and_Ocean_summary.txt"),
+                                    a(href = "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Land_and_Ocean_complete.txt", "https://berkeley-earth-temperature.s3.us-west-1.amazonaws.com/Global/Land_and_Ocean_complete.txt"),
                                     br(),
                                     br(),
                                     "RSS TLT:",
@@ -240,6 +243,10 @@ shinyUI(fluidPage(
                                     br(),
                                     "Sunspots:",
                                     a(href = "https://www.sidc.be/silso/DATA/SN_y_tot_V2.0.txt", "https://www.sidc.be/silso/DATA/SN_y_tot_V2.0.txt"),
+                                    br(),
+                                    br(),
+                                    "Solar irradiance:",
+                                    a(href = "https://www2.mps.mpg.de/projects/sun-climate/data/SATIRE-T_SATIRE-S_TSI_1850_20220923.txt", "https://www2.mps.mpg.de/projects/sun-climate/data/SATIRE-T_SATIRE-S_TSI_1850_20220923.txt"),
                                     br(),
                                     br(),
                                     "CO2:",
@@ -271,7 +278,7 @@ shinyUI(fluidPage(
                                    h4("Question: Isn't this all part of a natural cycle?"),
                                    p("Answer: No. None of the natural cycles we currently know could explain the current warming trend. First, it's happening much faster than any natural cycle could cause. Second, all of the cycles we have discovered so far are either neutral or cooling."),
                                    p("The sun? Cooling since the 1950s, as you can verify yourselves with the Solar Activity tab."),
-                                   p("Milankovic cycles? Neutral or cooling over the past 6,000 years and also take centuries to change the average global temperature by 1ºC."),
+                                   p("Milankovic cycles? Warming due to Milankovic cycles peaked 6,000 years ago and has been cooling since. If it were up to Milankovic cycles, we'd still be cooling down to the next ice age. Also take centuries to change the average global temperature by 1ºC."),
                                    p("El Niño? No discernable trend and also has the wrong period, again as you can verify yourself with the ENSO tab. While El Niño explains some of the wiggles around the trend, it does not match the trend itself."),
                                    p("Pacific Decadal Oscillation? Again, doesn't match the trend. Beyond not matching the trend, if ocean cycles were causing global warming, we'd expect ocean temperatures to cool as the atmosphere warmed. That hasn't happened."),
                                    p("Cosmic rays? Cosmic rays create C-14 in the atmosphere. If it was cosmic rays, we'd see more C-14 being created. That hasn't happened."),
@@ -284,7 +291,11 @@ shinyUI(fluidPage(
     h5("Created by: Jim Milks"),
     "Version 4",
     br(),
-    "Updated: 25 March 2023",
+    "Updated: 14 July 2023",
+    br(),
+    a(actionButton(inputId = "email1", label = "Contact Admin", 
+                   icon = icon("envelope", lib = "font-awesome")),
+      href = "mailto: jrmilks@gmail.com"),
     br(),
     "Code available at:",
     a(href = "https://github.com/jrmilks74/global-temperature-trend-calculator/tree/main", "https://github.com/jrmilks74/global-temperature-trend-calculator/tree/main")
