@@ -8,7 +8,9 @@ library(naniar)
 
 # Data sets of average annual global temperature
 GISS <- read_table("https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.txt", 
-                    skip = 7)
+                    skip = 7) %>%
+        filter(!row_number() %in% c(22,43, 64, 85, 106, 127, 148)) %>%
+        filter(row_number() <= n() - 5)
 GISS <- GISS %>%
         select("Year", anomaly = "J-D")
 GISS$Year <- as.numeric(GISS$Year)
@@ -17,7 +19,7 @@ GISS$anomaly <- GISS$anomaly/100
 GISS <- GISS %>%
         na.omit()
 
-NOAA <- read_table("https://www.ncei.noaa.gov/data/noaa-global-surface-temperature/v5.1/access/timeseries/aravg.ann.land_ocean.90S.90N.v5.1.0.202306.asc", 
+NOAA <- read_table("https://www.ncei.noaa.gov/data/noaa-global-surface-temperature/v5.1/access/timeseries/aravg.ann.land_ocean.90S.90N.v5.1.0.202308.asc", 
                    col_names = FALSE)
 NOAA <- NOAA %>%
         rename(Year = X1,
@@ -35,7 +37,7 @@ BEST <- read_table("https://berkeley-earth-temperature.s3.us-west-1.amazonaws.co
         select(Year, anomaly) %>%
         group_by(Year) %>%
         summarize(anomaly = mean(anomaly, na.rm = TRUE)) %>%
-        slice(1:(n() - 1)) 
+        filter(row_number() <= n() - 1)
 
 # Satelite data sets
 RSS <- RSS <- read_table("https://images.remss.com/msu/graphics/TLT_v40/time_series/RSS_TS_channel_TLT_Global_Land_And_Sea_v04_0.txt", 
