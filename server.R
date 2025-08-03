@@ -12,21 +12,15 @@ GISS <- read_table("https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.
         filter(!row_number() %in% c(22,43, 64, 85, 106, 127, 148)) %>%
         filter(row_number() <= n() - 5)
 GISS <- GISS %>%
-        select("Year", anomaly = "J-D")
+        select("Year", anomaly = "J-D") %>%
+        mutate(anomaly = na_if(anomaly, "****"))
 GISS$Year <- as.numeric(GISS$Year)
 GISS$anomaly <- as.numeric(GISS$anomaly)
 GISS$anomaly <- GISS$anomaly/100
 GISS <- GISS %>%
         na.omit()
 
-NOAA <- read_table("https://www.ncei.noaa.gov/data/noaa-global-surface-temperature/v5.1/access/timeseries/aravg.ann.land_ocean.90S.90N.v5.1.0.202309.asc", 
-                   col_names = FALSE)
-NOAA <- NOAA %>%
-        rename(Year = X1,
-               anomaly = X2) %>%
-        select(Year, anomaly)
-
-HadCRUT <- read_csv("https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/analysis/diagnostics/HadCRUT.5.0.1.0.analysis.summary_series.global.annual.csv")
+HadCRUT <- read_csv("https://www.metoffice.gov.uk/hadobs/crutem5/data/CRUTEM.5.0.2.0/diagnostics/CRUTEM.5.0.2.0.summary_series.global.annual.csv")
 HadCRUT <- HadCRUT %>%
         rename(Year = "Time", anomaly = "Anomaly (deg C)") %>%
         select(Year, anomaly)
@@ -59,7 +53,7 @@ UAH <- UAH %>%
         summarize(anomaly = mean(anomaly, na.rm = TRUE))
 
 # Sea surface temperatures
-HadSST <- read_csv("https://www.metoffice.gov.uk/hadobs/hadsst4/data/csv/HadSST.4.0.1.0_annual_GLOBE.csv",
+HadSST <- read_csv("https://www.metoffice.gov.uk/hadobs/hadsst4/data/data/HadSST.4.1.1.0_annual_GLOBE.csv",
                    col_types = cols(year = col_number(),
                                     anomaly = col_number()))
 HadSST <- HadSST %>%
@@ -74,9 +68,9 @@ sunspots <- sunspots %>%
 sunspots$Year <- sunspots$Year - 0.5
 
 # Solar output
-irradiance <- read_table("https://www2.mps.mpg.de/projects/sun-climate/data/SATIRE-T_SATIRE-S_TSI_1850_20220923.txt", 
+irradiance <- read_table("http://www2.mps.mpg.de/projects/sun-climate/data/SATIRE/SATIRE-S/SATIRE-S_TSI_latest.txt", 
            col_names = FALSE, 
-           skip = 22) %>%
+           skip = 34) %>%
         rename(time = X1, 
                irradiance = X2) %>%
         select(time, irradiance) %>%
@@ -91,7 +85,7 @@ irradiance <- read_table("https://www2.mps.mpg.de/projects/sun-climate/data/SATI
 
 # CO2 annual data
 CO2 <- read_table("https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.txt", 
-                   col_names = FALSE, skip = 61)
+                   col_names = FALSE, skip = 45)
 CO2 <- CO2 %>%
         rename(Year = X1, mean.CO2 = X2, uncertainty = X3)
 
@@ -168,8 +162,6 @@ shinyServer(function(input, output) {
     temperature_selection <- reactive({
             if (input$temperature == "GISS")
                     GISS
-            else if (input$temperature == "NOAA")
-                    NOAA
             else if (input$temperature == "BEST")
                     BEST
             else
@@ -204,7 +196,9 @@ shinyServer(function(input, output) {
             temperature_sub <- subset(temperature_selection(), temperature_selection()$Year >= input$startdate & temperature_selection()$Year <= input$enddate)
             start.year <- input$startdate
             fit <- lm(anomaly ~ I(Year - start.year), data = temperature_sub)
-            round(100*fit$coefficients[2], 2)
+            trend <- round(100*fit$coefficients[2], 2)
+            trend <- paste(trend, "ºC", sep = "")
+            trend
     })
     
     output$confidence <- renderText({
@@ -213,6 +207,16 @@ shinyServer(function(input, output) {
             fit <- lm(anomaly ~ I(Year -  start.year), data = temperature_sub)
             confidence <- confint(fit)
             c(round(100*confidence[2,1], 2), round(100*confidence[2,2], 2))
+    })
+    
+    output$total_change <- renderText({
+            temperature_sub <- subset(temperature_selection(), temperature_selection()$Year >= input$startdate & temperature_selection()$Year <= input$enddate)
+            start.year <- input$startdate
+            loess_fit <- loess(anomaly ~ I(Year - start.year), data = temperature_sub)
+            total <- tail(loess_fit$fitted)[6] - head(loess_fit$fitted)[1]
+            total <- round(total, 1)
+            total <- paste(total, "ºC", sep = "")
+            total
     })
     
     # Create graph of satellite temperature data and linear regression fit
@@ -252,7 +256,9 @@ shinyServer(function(input, output) {
             sat_sub <- subset(sat_selection(), sat_selection()$Year >= input$sat_startdate & sat_selection()$Year <= input$sat_enddate)
             start.year <- input$sat_startdate
             fit <- lm(anomaly ~ I(Year - start.year), data = sat_sub)
-            round(100*fit$coefficients[2], 2)
+            sat_trend <- round(100*fit$coefficients[2], 2)
+            sat_trend <- paste(sat_trend, "ºC", sep = "")
+            sat_trend
     })
     
     output$sat_confidence <- renderText({
@@ -261,6 +267,16 @@ shinyServer(function(input, output) {
             fit <- lm(anomaly ~ I(Year - start.year), data = sat_sub)
             confidence <- confint(fit)
             c(round(100*confidence[2,1], 2), round(100*confidence[2,2], 2))
+    })
+    
+    output$sat_total_change <- renderText({
+            sat_sub <- subset(sat_selection(), sat_selection()$Year >= input$startdate & sat_selection()$Year <= input$enddate)
+            start.year <- input$startdate
+            sat_loess_fit <- loess(anomaly ~ I(Year - start.year), data = sat_sub)
+            sat_total <- tail(sat_loess_fit$fitted)[6] - head(sat_loess_fit$fitted)[1]
+            sat_total <- round(sat_total, 1)
+            sat_total <- paste(sat_total, "ºC", sep = "")
+            sat_total
     })
     
     #HadSST plot
@@ -292,7 +308,9 @@ shinyServer(function(input, output) {
             ocean_sub <- subset(HadSST, Year >= input$ocean_startdate & Year <= input$ocean_enddate)
             start.year <- input$ocean_startdate
             fit <- lm(anomaly ~ I(Year - start.year), data = ocean_sub)
-            round(100*fit$coefficients[2], 2)
+            ocean_trend <- round(100*fit$coefficients[2], 2)
+            ocean_trend <- paste(ocean_trend, "ºC", sep = "")
+            ocean_trend
     })
     
     output$ocean_confidence <- renderText({
@@ -301,6 +319,17 @@ shinyServer(function(input, output) {
             fit <- lm(anomaly ~ I(Year - start.year), data = ocean_sub)
             confidence <- confint(fit)
             c(round(100*confidence[2,1], 2), round(100*confidence[2,2], 2))
+    })
+    
+    output$ocean_total_change <- renderText({
+            ocean_sub <- subset(HadSST, Year >= input$startdate & Year <= input$enddate)
+            start.year <- input$startdate
+            ocean_loess_fit <- loess(anomaly ~ I(Year - start.year), data = ocean_sub)
+            ocean_total <- tail(ocean_loess_fit$fitted)[6] - head(ocean_loess_fit$fitted)[1]
+            ocean_total <- round(ocean_total, 1)
+            ocean_total <- paste(ocean_total, "ºC", sep = "")
+            ocean_total
+            
     })
     
     #Sunspot numbers plot
@@ -319,7 +348,7 @@ shinyServer(function(input, output) {
                     geom_smooth(method = loess, formula = y ~ x, aes(colour = "LOESS"), se = FALSE) +
                     geom_smooth(method = "lm", formula = y ~ x, aes(colour = "Linear trend")) +
                     labs(x = "Year",
-                         y = "Mean solar output",
+                         y = "Mean solar output (Watts per square meter)",
                          title = "Mean solar output per year")
             ggplotly(sun_p)
             })
@@ -337,7 +366,9 @@ shinyServer(function(input, output) {
             sun_sub <- subset(solar_selection(), solar_selection()$Year >= input$sun_startdate & solar_selection()$Year <= input$sun_enddate)
             start.year <- input$sun_startdate
             fit <- lm(Solar ~ I(Year - start.year), data = sun_sub)
-            round(100*fit$coefficients[2], 2)
+            solar_trend <- round(100*fit$coefficients[2], 2)
+            solar_trend <- paste(solar_trend, "Watts per meter squared", sep = " ")
+            solar_trend
     })
     
     output$sun_confidence <- renderText({
@@ -348,6 +379,16 @@ shinyServer(function(input, output) {
             c(round(100*confidence[2,1], 2), round(100*confidence[2,2], 2))
     })
     
+    output$solar_change <- renderText({
+            sun_sub <- subset(solar_selection(), solar_selection()$Year >= input$startdate & solar_selection()$Year <= input$enddate)
+            start.year <- input$startdate
+            solar_loess_fit <- loess(Solar ~ I(Year - start.year), data = sun_sub)
+            solar_total <- tail(solar_loess_fit$fitted)[6] - head(solar_loess_fit$fitted)[1]
+            solar_total <- round(solar_total, 1)
+            solar_total <- paste(solar_total, "Watts per meter squared", sep = " ")
+            solar_total
+    })
+    
     #CO2 plot
     output$CO2_plot <- renderPlotly({
             CO2_sub <- subset(CO2, Year >= input$CO2_startdate & Year <= input$CO2_enddate)
@@ -355,7 +396,7 @@ shinyServer(function(input, output) {
                     theme_bw() +
                     geom_line(colour = "black", size = 1) +
                     geom_smooth(method = loess, formula = y ~ x, aes(colour = "LOESS"), se = FALSE, size = 0.5) +
-                    geom_smooth(method = "lm", formula = y ~ poly(x, 2), aes(colour = "Quadratic linear trend")) +
+                    geom_smooth(method = "lm", formula = y ~ x, aes(colour = "Linear trend")) +
                     labs(x = "Year",
                          y = "Mean CO2 level (ppm)",
                          title = "Mean atmospheric CO2 levels per year")
@@ -366,7 +407,7 @@ shinyServer(function(input, output) {
     output$CO2_sum <- renderPrint({
             CO2_sub <- subset(CO2, Year >= input$CO2_startdate & Year <= input$CO2_enddate)
             start.year <- input$CO2_startdate
-            fit <- lm(mean.CO2 ~ I(Year - start.year) + I((Year - start.year)^2), data = CO2_sub)
+            fit <- lm(mean.CO2 ~ I(Year - start.year), data = CO2_sub)
             summary(fit)
     })
     
@@ -375,7 +416,9 @@ shinyServer(function(input, output) {
             CO2_sub <- subset(CO2, Year >= input$CO2_startdate & Year <= input$CO2_enddate)
             start.year <- input$CO2_startdate
             fit <- lm(mean.CO2 ~ I(Year - start.year) + I((Year - start.year)^2), data = CO2_sub)
-            10*round(fit$coefficients[2], 2)
+            CO2_trend <- 10*round(fit$coefficients[2], 2)
+            CO2_trend <- paste(CO2_trend, "ppmv", sep = " ")
+            CO2_trend
     })
     
     output$CO2_confidence <- renderText({
@@ -386,6 +429,16 @@ shinyServer(function(input, output) {
             c(10*round(confidence[2,1], 2), 10*round(confidence[2,2], 2))
     })
     
+    output$CO2_change <- renderText({
+            CO2_sub <- subset(CO2, Year >= input$CO2_startdate & Year <= input$CO2_enddate)
+            start.year <- input$startdate
+            CO2_loess_fit <- loess(mean.CO2 ~ I(Year - start.year), data = CO2_sub)
+            CO2_total <- tail(CO2_loess_fit$fitted)[6] - head(CO2_loess_fit$fitted)[1]
+            CO2_total <- round(CO2_total, 1)
+            CO2_total <- paste(CO2_total, "ppmv", sep = " ")
+            CO2_total
+    })
+    
     #ENSO plot
     output$ENSO_plot <- renderPlotly({
             ENSO_sub <- subset(ENSO, YR >= input$ENSO_startdate & YR <= input$ENSO_enddate)
@@ -393,6 +446,8 @@ shinyServer(function(input, output) {
                     theme_bw() +
                     geom_line() +
                     geom_smooth(method = "loess", formula = y ~ x) +
+                    geom_hline(yintercept = 0.5, linetype = "dashed", colour = "red", size = 0.25) +
+                    geom_hline(yintercept = -0.5, linetype = "dashed", colour = "blue", size = 0.25)
                     labs(x = "Year",
                          y = "Sea surface temperature anomaly (ºC)",
                          title = "ENSO 3.4 sea surface temperature")
@@ -484,8 +539,10 @@ shinyServer(function(input, output) {
     output$sea_ice_trend <- renderText({
             sea_ice_suba <- subset(sea_ice_data_set(), year >= input$sea_ice_startdate & year <= input$sea_ice_enddate)
             sea_ice_sub <- subset(sea_ice_suba, month %in% sea_ice_month())
-            fit <- lm(extent ~ decimal.date, data = sea_ice_sub)
-            round(10*fit$coefficients[2], 2)
+            sea_fit <- lm(extent ~ decimal.date, data = sea_ice_sub)
+            sea_trend <- round(10*sea_fit$coefficients[2], 2)
+            sea_trend <- paste(sea_trend, "square kilometers", sep = " ")
+            sea_trend
     })
     
     output$sea_ice_confidence <- renderText({
@@ -494,6 +551,17 @@ shinyServer(function(input, output) {
             fit <- lm(extent ~ decimal.date, data = sea_ice_sub)
             confidence <- confint(fit)
             c(round(10*confidence[2,1], 2), 10*round(confidence[2,2], 2))
+    })
+    
+    output$sea_ice_change <- renderText({
+            sea_ice_suba <- subset(sea_ice_data_set(), year >= input$sea_ice_startdate & year <= input$sea_ice_enddate)
+            sea_ice_sub <- subset(sea_ice_suba, month %in% sea_ice_month())
+            start.year <- input$startdate
+            sea_loess_fit <- loess(extent ~ decimal.date, data = sea_ice_sub)
+            sea_ice_total <- tail(sea_loess_fit$fitted)[6] - head(sea_loess_fit$fitted)[1]
+            sea_ice_total <- round(sea_ice_total, 1)
+            sea_ice_total <- paste(sea_ice_total, "square kilometers", sep = " ")
+            sea_ice_total
     })
     
 })
