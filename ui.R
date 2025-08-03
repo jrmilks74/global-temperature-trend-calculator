@@ -17,23 +17,24 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     selectInput("temperature", "Choose a data set:",
                                                 list("GISS" = "GISS",
-                                                     "NOAA" = "NOAA",
                                                      "HadCRUT" = "HadCRUT",
                                                      "BEST" = "BEST"),
                                                 selected = "HadCRUT"),
                                     
                                     h5("Enter a year between 1850 and last year"),
-                                    h6("Note: HadCRUT and BEST start in 1850, NOAA and GISS in 1880"),
+                                    h6("Note: HadCRUT and BEST start in 1850, GISS in 1880"),
                                     numericInput("startdate", "Start Year", 1880, min = 1850),
-                                    numericInput("enddate", "End Year", 2023, min = 1851)
+                                    numericInput("enddate", "End Year", 2024, min = 1851)
                                     ),
                             
                             # Trend, time series graph with regression line, and regression output.
                             mainPanel(
-                                    h3("Trend per 100 years (ºC)"),
+                                    h3("Linear trend per 100 years"),
                                     textOutput("trend"),
                                     h5("95% confidence interval (ºC)"),
                                     textOutput("confidence"),
+                                    h3("Net change over the selected time period"),
+                                    textOutput("total_change"),
                                     h3("Change in global temperature over time"),
                                     h5("Trend with 95% confidence interval"),
                                     plotlyOutput("tempPlot"),
@@ -53,14 +54,16 @@ shinyUI(fluidPage(
                                                 selected = "RSS"),
                                     h5("Enter a year between 1979 and last year"),
                                     numericInput("sat_startdate", "Start Year", 1979, min = 1979),
-                                    numericInput("sat_enddate", "End Year", 2023, min = 1980)
+                                    numericInput("sat_enddate", "End Year", 2024, min = 1980)
                                     ),
                             # Trend, time series graph with regression line, and regression output.
                             mainPanel(
-                                    h3("Trend per 100 years (ºC)"),
+                                    h3("Linear trend per 100 years"),
                                     textOutput("sat_trend"),
                                     h5("95% confidence interval (ºC)"),
                                     textOutput("sat_confidence"),
+                                    h3("Net change over the selected time period"),
+                                    textOutput("sat_total_change"),
                                     h3("Change in global temperature over time"),
                                     h5("Trend with 95% confidence interval"),
                                     plotlyOutput("sat_tempPlot"),
@@ -76,14 +79,16 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1850 and last year"),
                                     numericInput("ocean_startdate", "Start Year", 1850, min = 1850),
-                                    numericInput("ocean_enddate", "End Year", 2023, min = 1851)
+                                    numericInput("ocean_enddate", "End Year", 2024, min = 1851)
                             ),
                             # Trend, time series graph with regression line, and regression output.
                             mainPanel(
-                                    h3("Trend per 100 years (ºC)"),
+                                    h3("Trend per 100 years"),
                                     textOutput("ocean_trend"),
                                     h5("95% confidence interval (ºC)"),
                                     textOutput("ocean_confidence"),
+                                    h3("Net change over the selected time period"),
+                                    textOutput("ocean_total_change"),
                                     h3("Change in ocean temperature over time"),
                                     h5("Trend with 95% confidence interval"),
                                     plotlyOutput("ocean_tempPlot"),
@@ -103,14 +108,16 @@ shinyUI(fluidPage(
                                                 selected = "irradiance"),
                                     h5("Enter a year between 1850 and last year"),
                                     numericInput("sun_startdate", "Start Year", 1850, min = 1750),
-                                    numericInput("sun_enddate", "End Year", 2023, min = 1751)
+                                    numericInput("sun_enddate", "End Year", 2025, min = 1751)
                                     ),
                     #Trend, time series graph, and regression output
                     mainPanel(
-                            h3("Change in solar output per 100 years"),
+                            h3("Linear trend in solar output per 100 years"),
                             textOutput("sun_trend"),
-                            h5("95% confidence interval"),
+                            h5("95% confidence interval (Watts per meter squared)"),
                             textOutput("sun_confidence"),
+                            h3("Net change over the selected time period"),
+                            textOutput("solar_change"),
                             h3("Change in solar output over time"),
                             h5("Trend with 95% confidence interval"),
                             plotlyOutput("sun_plot"),
@@ -126,14 +133,16 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1959 and last year"),
                                     numericInput("CO2_startdate", "Start Year", 1959, min = 1959),
-                                    numericInput("CO2_enddate", "End Year", 2023, min = 1960)
+                                    numericInput("CO2_enddate", "End Year", 2025, min = 1960)
                             ),
                             #Trend, time series graph, and regression output
                             mainPanel(
-                                    h3(HTML(paste0("Linear change in atmospheric CO",tags$sub("2"), " levels per decade (ppm)"))),
+                                    h3(HTML(paste0("Linear change in atmospheric CO",tags$sub("2"), " levels per decade"))),
                                     textOutput("CO2_trend"),
-                                    h5("95% confidence interval (ppm)"),
+                                    h5("95% confidence interval (ppmv)"),
                                     textOutput("CO2_confidence"),
+                                    h3("Net change over selected time period"),
+                                    textOutput("CO2_change"),
                                     h3(HTML(paste0("Change in atmospheric CO",tags$sub("2"), " levels over time"))),
                                     h5("Trend with 95% confidence interval"),
                                     plotlyOutput("CO2_plot"),
@@ -149,7 +158,7 @@ shinyUI(fluidPage(
                             sidebarPanel(
                                     h5("Enter a year between 1950 and last year"),
                                     numericInput("ENSO_startdate", "Start Year", 1950, min = 1950),
-                                    numericInput("ENSO_enddate", "End Year", 2023, min = 1951)
+                                    numericInput("ENSO_enddate", "End Year", 2025, min = 1951)
                             ),
                             #Trend, time series graph, and regression output
                             mainPanel(
@@ -176,7 +185,7 @@ shinyUI(fluidPage(
                                                 ),
                                     h5("Enter a year between 1979 and last year"),
                                     numericInput("sea_ice_startdate", "Start Year", 1979, min = 1979),
-                                    numericInput("sea_ice_enddate", "End Year", 2023, min = 1980),
+                                    numericInput("sea_ice_enddate", "End Year", 2025, min = 1980),
                                     h5("Select a month"),
                                     selectInput("sea_ice_month_choice", "Select month", choices = c("All",
                                                                                      "January",
@@ -194,12 +203,14 @@ shinyUI(fluidPage(
                                                 )
                             ),
                             mainPanel(
-                                    h3("Change in sea ice extent per decade (square kilometers)"),
+                                    h3("Change in sea ice extent per decade"),
                                     textOutput("sea_ice_trend"),
                                     h5("95% confidence interval (square kilometers)"),
                                     textOutput("sea_ice_confidence"),
+                                    h3("Net change over selected time period"),
+                                    textOutput("sea_ice_change"),
                                     h3("Change in sea ice extent over time"),
-                                    h5("Loess trend with 95% confidence interval"),
+                                    h5("Linear trend with 95% confidence interval"),
                                     plotlyOutput("sea_ice_plot"),
                                     h3("Linear Regression fit"),
                                     verbatimTextOutput("sea_ice_sum")    
@@ -217,12 +228,8 @@ shinyUI(fluidPage(
                                     a(href = "https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.txt", "https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.txt"),
                                     br(),
                                     br(),
-                                    "NOAA:",
-                                    a(href = "https://www.ncei.noaa.gov/access/monitoring/global-temperature-anomalies/anomalies", "https://www.ncei.noaa.gov/access/monitoring/global-temperature-anomalies/anomalies"),
-                                    br(),
-                                    br(),
                                     "HadCRUT5:",
-                                    a(href = "https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/download.html", "https://www.metoffice.gov.uk/hadobs/hadcrut5/data/current/download.html"),
+                                    a(href = "https://www.metoffice.gov.uk/hadobs/crutem5/data/CRUTEM.5.0.2.0/diagnostics/CRUTEM.5.0.2.0.summary_series.global.annual.csv", "https://www.metoffice.gov.uk/hadobs/crutem5/data/CRUTEM.5.0.2.0/diagnostics/CRUTEM.5.0.2.0.summary_series.global.annual.csv"),
                                     br(),
                                     br(),
                                     "BEST:",
@@ -238,7 +245,7 @@ shinyUI(fluidPage(
                                     br(),
                                     br(),
                                     "Ocean temperatures (HadSST):",
-                                    a(href = "https://www.metoffice.gov.uk/hadobs/hadsst4/data/csv/HadSST.4.0.1.0_annual_GLOBE.csv", "https://www.metoffice.gov.uk/hadobs/hadsst4/data/csv/HadSST.4.0.1.0_annual_GLOBE.csv"),
+                                    a(href = "https://www.metoffice.gov.uk/hadobs/hadsst4/data/data/HadSST.4.1.1.0_annual_GLOBE.csv", "https://www.metoffice.gov.uk/hadobs/hadsst4/data/data/HadSST.4.1.1.0_annual_GLOBE.csv"),
                                     br(),
                                     br(),
                                     "Sunspots:",
@@ -291,7 +298,7 @@ shinyUI(fluidPage(
     h5("Created by: Jim Milks"),
     "Version 4",
     br(),
-    "Updated: 14 July 2023",
+    "Updated: 2025 August 2",
     br(),
     a(actionButton(inputId = "email1", label = "Contact Admin", 
                    icon = icon("envelope", lib = "font-awesome")),
